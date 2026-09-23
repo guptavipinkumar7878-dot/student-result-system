@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Modern Student Result and Attendance Management System with live analytics, ranking, grade calculation, and binary search.">
+  <title>EduTrack | Student Result & Attendance Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- ====================================================================
+         HEADER
+         ==================================================================== -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo" aria-hidden="true">
+          🎓
+        </div>
+        <div class="brand-title-group">
+          <h1>EduTrack System</h1>
+          <div class="brand-subtitle">
+            <span class="status-indicator-dot"></span>
+            <span>Student Result & Attendance Portal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="btn btn-icon-only" title="Toggle Theme" aria-label="Toggle theme">
+          <span id="themeIcon">🌙</span>
+        </button>
+
+        <button id="sampleDataBtn" class="btn btn-outline" title="Load sample student records">
+          <span>⚡</span> Load Demo Data
+        </button>
+
+        <button id="exportCsvBtn" class="btn btn-secondary" title="Export results to CSV">
+          <span>📥</span> Export CSV
+        </button>
+
+        <button id="openAddModalBtn" class="btn btn-primary" title="Add a new student">
+          <span>➕</span> Add Student
+        </button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         METRICS / KPI SUMMARY CARDS
+         ==================================================================== -->
+    <section class="stats-grid" aria-label="Class Performance Summary">
+      <!-- Total Students -->
+      <div class="stat-card" style="--stat-gradient: linear-gradient(135deg, #6366f1, #8b5cf6); --stat-bg: rgba(99, 102, 241, 0.15); --stat-color: #818cf8;">
+        <div class="stat-card-header">
+          <span class="stat-label">Total Students</span>
+          <div class="stat-icon">👥</div>
+        </div>
+        <div class="stat-value" id="kpiTotalStudents">0</div>
+        <div class="stat-subtext">Registered candidates</div>
+      </div>
+
+      <!-- Class Average Marks -->
+      <div class="stat-card" style="--stat-gradient: linear-gradient(135deg, #06b6d4, #3b82f6); --stat-bg: rgba(6, 182, 212, 0.15); --stat-color: #22d3ee;">
+        <div class="stat-card-header">
+          <span class="stat-label">Average Marks</span>
+          <div class="stat-icon">📊</div>
+        </div>
+        <div class="stat-value" id="kpiAvgMarks">0.0</div>
+        <div class="stat-subtext">Out of 100 maximum marks</div>
+      </div>
+
+      <!-- Class Average Attendance -->
+      <div class="stat-card" style="--stat-gradient: linear-gradient(135deg, #10b981, #059669); --stat-bg: rgba(16, 185, 129, 0.15); --stat-color: #34d399;">
+        <div class="stat-card-header">
+          <span class="stat-label">Avg Attendance</span>
+          <div class="stat-icon">⏱️</div>
+        </div>
+        <div class="stat-value" id="kpiAvgAttendance">0%</div>
+        <div class="stat-subtext" id="kpiAttendanceHealth">Criterion: 75% minimum</div>
+      </div>
+
+      <!-- Class Topper / Rank 1 -->
+      <div class="stat-card" style="--stat-gradient: linear-gradient(135deg, #f59e0b, #d97706); --stat-bg: rgba(245, 158, 11, 0.15); --stat-color: #fbbf24;">
+        <div class="stat-card-header">
+          <span class="stat-label">Top Performer</span>
+          <div class="stat-icon">🏆</div>
+        </div>
+        <div class="stat-value" id="kpiTopPerformer" style="font-size: 1.45rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">None</div>
+        <div class="stat-subtext" id="kpiTopScore">Rank #1 Leader</div>
+      </div>
+
+      <!-- Pass Percentage -->
+      <div class="stat-card" style="--stat-gradient: linear-gradient(135deg, #ec4899, #f43f5e); --stat-bg: rgba(236, 72, 153, 0.15); --stat-color: #f472b6;">
+        <div class="stat-card-header">
+          <span class="stat-label">Pass Rate</span>
+          <div class="stat-icon">🎯</div>
+        </div>
+        <div class="stat-value" id="kpiPassRate">0%</div>
+        <div class="stat-subtext" id="kpiPassedCount">Score ≥ 50 (Grade E+)</div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CONTROLS & SEARCH TOOLBAR
+         ==================================================================== -->
+    <section class="toolbar-card" aria-label="Search and Filter Controls">
+      <div class="toolbar-top-row">
+        <!-- Text search -->
+        <div class="search-group">
+          <div class="input-with-icon">
+            <span class="input-icon">🔍</span>
+            <input type="text" id="liveSearchInput" class="input-field" placeholder="Search by student name or roll number..." aria-label="Live search students">
+          </div>
+        </div>
+
+        <!-- Binary Search Tool -->
+        <div class="binary-search-box" title="Search student by Roll Number using Binary Search algorithm O(log N)">
+          <span class="binary-search-badge">Binary Search</span>
+          <input type="number" id="binarySearchRollInput" class="binary-search-input" placeholder="Enter Roll No..." aria-label="Binary Search Roll Number">
+          <button id="binarySearchBtn" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem;">
+            Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter options row -->
+      <div class="toolbar-filter-row">
+        <div class="filters-cluster">
+          <!-- Grade Filter -->
+          <div class="filter-item">
+            <label for="gradeFilterSelect" class="filter-label">Grade:</label>
+            <select id="gradeFilterSelect" class="select-control">
+              <option value="ALL">All Grades</option>
+              <option value="A">Grade A (90-100)</option>
+              <option value="B">Grade B (80-89)</option>
+              <option value="C">Grade C (70-79)</option>
+              <option value="D">Grade D (60-69)</option>
+              <option value="E">Grade E (50-59)</option>
+              <option value="F">Grade F (&lt;50)</option>
+            </select>
+          </div>
+
+          <!-- Attendance Filter -->
+          <div class="filter-item">
+            <label for="attendanceFilterSelect" class="filter-label">Attendance:</label>
+            <select id="attendanceFilterSelect" class="select-control">
+              <option value="ALL">All Status</option>
+              <option value="SAFE">Safe (≥ 75%)</option>
+              <option value="SHORTAGE">Shortage (&lt; 75%)</option>
+            </select>
+          </div>
+
+          <!-- Sort Order -->
+          <div class="filter-item">
+            <label for="sortBySelect" class="filter-label">Sort By:</label>
+            <select id="sortBySelect" class="select-control">
+              <option value="rank_asc">Rank (Highest Marks)</option>
+              <option value="marks_asc">Marks (Lowest First)</option>
+              <option value="roll_asc">Roll Number (Ascending)</option>
+              <option value="roll_desc">Roll Number (Descending)</option>
+              <option value="name_asc">Name (A-Z)</option>
+              <option value="attendance_desc">Attendance (High to Low)</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <button id="resetFiltersBtn" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;">
+            Reset Filters
+          </button>
+        </div>
+
+        <div class="active-count-indicator">
+          Showing <strong id="visibleStudentCount">0</strong> of <strong id="totalStudentCount">0</strong> students
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         STUDENT LEADERBOARD / TABLE
+         ==================================================================== -->
+    <main class="table-container">
+      <div class="table-responsive">
+        <table class="data-table" id="studentsTable" aria-label="Student Results and Attendance">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="rank">Rank</th>
+              <th class="sortable" data-sort="roll">Roll No</th>
+              <th class="sortable" data-sort="name">Student</th>
+              <th class="sortable" data-sort="marks">Marks / Score</th>
+              <th class="sortable" data-sort="attendance">Attendance</th>
+              <th class="sortable" data-sort="grade">Grade</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody">
+            <!-- Dynamically populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State View -->
+      <div id="emptyStateView" class="empty-state-view" style="display: none;">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">No Student Records Found</div>
+        <p class="empty-state-text">There are currently no students matching your filter criteria or in the database.</p>
+        <div style="display: flex; gap: 12px;">
+          <button id="emptyAddBtn" class="btn btn-primary">➕ Add First Student</button>
+          <button id="emptyLoadSampleBtn" class="btn btn-secondary">⚡ Load Demo Records</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ====================================================================
+         FOOTER
+         ==================================================================== -->
+    <footer class="app-footer">
+      <p>Student Result &amp; Attendance Management System &bull; Interactive Web Application</p>
+    </footer>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: ADD / EDIT STUDENT
+       ==================================================================== -->
+  <div id="studentModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add New Student</h2>
+        <button id="closeModalBtn" class="modal-close-btn" aria-label="Close dialog">&times;</button>
+      </div>
+      
+      <form id="studentForm">
+        <div class="modal-body">
+          <input type="hidden" id="editStudentOriginalRoll" value="">
+
+          <!-- Roll Number -->
+          <div class="form-group">
+            <label for="studentRollInput" class="form-label">Roll Number *</label>
+            <input type="number" id="studentRollInput" class="input-field" placeholder="e.g. 101" required min="1" max="999999">
+            <div class="form-help-text">Unique identification integer for the student.</div>
+          </div>
+
+          <!-- Name -->
+          <div class="form-group">
+            <label for="studentNameInput" class="form-label">Full Name *</label>
+            <input type="text" id="studentNameInput" class="input-field" placeholder="e.g. Emily Watson" required minlength="2" maxlength="50">
+          </div>
+
+          <!-- Marks and Attendance in 2 cols -->
+          <div class="form-row-2">
+            <!-- Marks -->
+            <div class="form-group">
+              <label for="studentMarksInput" class="form-label">Marks (0 - 100) *</label>
+              <input type="number" id="studentMarksInput" class="input-field" placeholder="0 - 100" required min="0" max="100" step="0.5">
+            </div>
+
+            <!-- Attendance -->
+            <div class="form-group">
+              <label for="studentAttendanceInput" class="form-label">Attendance % (0 - 100) *</label>
+              <input type="number" id="studentAttendanceInput" class="input-field" placeholder="0 - 100" required min="0" max="100" step="0.1">
+            </div>
+          </div>
+
+          <!-- Dynamic Live Grade Preview -->
+          <div class="live-grade-preview">
+            <div style="font-size: 0.825rem; color: var(--text-secondary);">
+              <span>Projected Grade:</span>
+              <strong id="previewGradeText" style="color: var(--text-primary); margin-left: 6px;">Enter marks</strong>
+            </div>
+            <span id="previewGradePill" class="grade-pill" style="display: none;">-</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="saveStudentBtn" class="btn btn-primary">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: STUDENT REPORT CARD / SEARCH RESULT
+       ==================================================================== -->
+  <div id="reportModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reportStudentName">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2>Student Performance Report</h2>
+        <button id="closeReportModalBtn" class="modal-close-btn" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="report-card-container">
+          <div class="report-header-badge" id="reportBadgeIcon">🎓</div>
+          <h3 class="report-student-name" id="reportStudentName">-</h3>
+          <div class="report-roll-text">Roll Number: <strong id="reportStudentRoll">-</strong></div>
+
+          <div class="report-metrics-grid">
+            <div class="report-metric-tile">
+              <div class="report-metric-label">Assigned Rank</div>
+              <div class="report-metric-value" id="reportStudentRank">-</div>
+            </div>
+            <div class="report-metric-tile">
+              <div class="report-metric-label">Academic Grade</div>
+              <div class="report-metric-value" id="reportStudentGrade">-</div>
+            </div>
+            <div class="report-metric-tile">
+              <div class="report-metric-label">Marks Scored</div>
+              <div class="report-metric-value" id="reportStudentMarks">-</div>
+            </div>
+            <div class="report-metric-tile">
+              <div class="report-metric-label">Status</div>
+              <div class="report-metric-value" id="reportStudentStatus">-</div>
+            </div>
+          </div>
+
+          <!-- Attendance progress section -->
+          <div class="report-attendance-progress">
+            <div class="report-attendance-header">
+              <span>Attendance Record</span>
+              <span id="reportAttendancePercent">-</span>
+            </div>
+            <div class="progress-bar-bg" style="height: 10px;">
+              <div id="reportAttendanceFill" class="progress-bar-fill" style="width: 0%; background: var(--status-success);"></div>
+            </div>
+            <div id="reportAttendanceVerdict" style="font-size: 0.775rem; margin-top: 6px; color: var(--text-tertiary);"></div>
+          </div>
+
+          <!-- Binary search execution steps (if search triggered this) -->
+          <div id="binarySearchLogContainer" style="display: none;">
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); text-align: left; margin-top: 16px;">
+              ⚡ Binary Search Trace O(log n):
+            </div>
+            <div id="binarySearchStepsLog" class="binary-search-steps-log"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="closeReportFooterBtn" class="btn btn-secondary">Close</button>
+        <button type="button" id="printReportBtn" class="btn btn-primary">🖨️ Print Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       TOAST CONTAINER
+       ==================================================================== -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
